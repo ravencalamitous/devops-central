@@ -1,0 +1,53 @@
+name: Reusable - Update Helm Values
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: "Name of the service (e.g. logistics-pickup)"
+        required: true
+        type: string
+      environment:
+        description: "Target environment: dev or prod"
+        required: true
+        type: string
+      image_tag:
+        description: "Docker image tag to update in helm values"
+        required: true
+        type: string
+
+    secrets:
+      HELM_REPO_TOKEN:
+        required: true
+
+jobs:
+  update-helm:
+    name: Update Helm - ${{ inputs.service_name }} (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout logistics-helm repo
+        uses: actions/checkout@v4
+        with:
+          repository: your-org/logistics-helm
+          token: ${{ secrets.HELM_REPO_TOKEN }}
+          path: logistics-helm
+
+      - name: Update image tag in environment values
+        run: |
+          cd logistics-helm
+
+          ENV=${{ inputs.environment }}
+          SERVICE=${{ inputs.service_name }}
+          TAG=${{ inputs.image_tag }}
+
+          # Update tag under the correct service key in environment yaml
+          # Example: updates  pickup.tag or delivery.tag
+          SERVICE_KEY=$(echo $SERVICE | sed 's/logistics-//')
+          sed -i "/^${SERVICE_KEY}:/,/tag:/ s/tag:.*/tag: ${TAG}/" environments/${ENV}.yaml
+
+          git config user.name "devops-bot"
+          git config user.email "devops-bot@your-org.com"
+          git add environments/${ENV}.yaml
+          git commit -m "ci(${ENV}): update ${SERVICE} image tag to ${TAG}"
+          git push
