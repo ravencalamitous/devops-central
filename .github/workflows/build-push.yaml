@@ -4,15 +4,11 @@ on:
   workflow_call:
     inputs:
       service_name:
-        description: "Name of the service (e.g. logistics-pickup)"
+        description: "Name of the service"
         required: true
         type: string
       environment:
-        description: "Target environment: dev or prod"
-        required: true
-        type: string
-      image_tag:
-        description: "Image tag (e.g. dev-abc1234 or v1.0.0)"
+        description: "Target environment: dev"
         required: true
         type: string
       branch:
@@ -34,8 +30,6 @@ on:
         required: false
       DOCKERHUB_TOKEN:
         required: false
-      HELM_REPO_TOKEN:
-        required: false
 
 jobs:
   build:
@@ -49,10 +43,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          repository: ravencalamitouss/${{ inputs.service_name }}
-          token: ${{ secrets.HELM_REPO_TOKEN }}
-          ref: ${{ inputs.branch }}
 
       - name: Set image tag
         id: meta
