@@ -1,0 +1,82 @@
+name: Reusable - Retag Image
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: "Name of the service"
+        required: true
+        type: string
+      source_tag:
+        description: "Existing image tag to retag from (e.g. dev-latest)"
+        required: true
+        type: string
+      target_tag:
+        description: "New tag to apply (e.g. rc-1.0.0 or v1.0.0)"
+        required: true
+        type: string
+
+    outputs:
+      image_tag:
+        description: "The new image tag"
+        value: ${{ jobs.retag.outputs.image_tag }}
+
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+
+jobs:
+  retag:
+    name: Retag ${{ inputs.source_tag }} → ${{ inputs.target_tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      image_tag: ${{ inputs.target_tag }}
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull source image
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:${{ inputs.source_tag }}
+
+      - name: Retag image
+        run: |
+          docker tag \
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:${{ inputs.source_tag }} \
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:${{ inputs.target_tag }}
+
+      - name: Push retagged image
+        run: |
+          docker push \
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:${{ inputs.target_tag }}
+
+          # Update environment latest tag
+          if [[ "${{ inputs.target_tag }}" == rc-* ]]; then
+            docker tag \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:${{ inputs.target_tag }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:staging-latest
+            docker push \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:staging-latest
+          fi
+
+          if [[ "${{ inputs.target_tag }}" == v* ]]; then
+            docker tag \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:${{ inputs.target_tag }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:prod-latest
+            docker push \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.service_name }}:prod-latest
+          fi
+
+      - name: Summary
+        run: |
+          echo "✅ Retagged successfully"
+          echo "   From : ${{ inputs.source_tag }}"
+          echo "   To   : ${{ inputs.target_tag }}"
