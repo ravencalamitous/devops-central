@@ -30,7 +30,7 @@ jobs:
       - name: Checkout logistics-helm repo
         uses: actions/checkout@v4
         with:
-          repository: ravencalamitouss/logistics-helm
+          repository: ravencalamitous/logistics-helm
           token: ${{ secrets.HELM_REPO_TOKEN }}
           path: logistics-helm
 
@@ -52,7 +52,7 @@ jobs:
           cat environments/${ENV}.yaml
 
           git config user.name "devops-bot"
-          git config user.email "devops-bot@ravencalamitouss.com"
+          git config user.email "devops-bot@ravencalamitous.com"
           git add environments/${ENV}.yaml
           git commit -m "ci(${ENV}): update ${SERVICE} image tag to ${TAG}"
           git push
