@@ -44,10 +44,7 @@ jobs:
             --no-git \
             --no-banner \
             -v \
-            --ignore-path node_modules \
-            --ignore-path coverage \
-            --ignore-path "*.tar.gz" \
-            --ignore-path gitleaks
+            --gitleaks-ignore-path node_modules \
 
       - name: Dependency Scan (npm audit)
         run: npm audit --audit-level=high
